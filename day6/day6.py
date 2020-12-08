@@ -1,10 +1,7 @@
 def count_anyone(group):
-    answers = set()
-    for response in group.splitlines():
-        answers.update(set(response))
-    # print "{}\t{}".format(len(answers),
-    #                       group.replace('\n', ', '))
-    return len(answers)
+    # remove whitespace + count unique
+    group = ''.join(group.split())
+    return len(set(group))
 
 
 def count_everyone(group):
@@ -23,7 +20,7 @@ if __name__ == '__main__':
         anyone = 0
         everyone = 0
         for g in groups:
-            anyone += count_anyone(g)
+            anyone += len(set(''.join(g.split())))
             everyone += count_everyone(g)
         print 'Part 1: Any group member has answer = {}'.format(anyone)
         print 'Part 2: Entire group has answer = {}'.format(everyone)
