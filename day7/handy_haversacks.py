@@ -1,7 +1,4 @@
 import re
-import pprint
-
-pp = pprint.PrettyPrinter()
 
 
 def parse_input(filename):
