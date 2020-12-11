@@ -5,23 +5,23 @@ num_cols = 0
 def count_visible(board, position, max_depth=None):
     c = position % num_cols
     r = position / num_cols
-    directions = [(-1,-1), (-1,0), (-1,+1), (0,-1), (0,+1), (+1,-1), (+1,0), (+1,+1)]
+    directions = [(-1, -1), (-1, 0), (-1, +1), (0, -1), (0, +1), (+1, -1), (+1, 0), (+1, +1)]
 
     num_occupied = 0
 
     for (dr, dc) in directions:
-        d = 0   # used to limit how far we search
+        d = 0  # used to limit how far we search
         r0 = r
         c0 = c
         while 1:
             r0 += dr
             c0 += dc
-            if not(0 <= r0 < num_rows and 0 <= c0 < num_cols):
+            if not (0 <= r0 < num_rows and 0 <= c0 < num_cols):
                 # We reached the edge of the grid
                 break
-            if board[r0*num_cols+c0] == 'L':
+            if board[r0 * num_cols + c0] == 'L':
                 break
-            if board[r0*num_cols+c0] == '#':
+            if board[r0 * num_cols + c0] == '#':
                 num_occupied += 1
                 break
 
@@ -41,7 +41,7 @@ def pretty_print(board, cols):
 
 
 def run(filename, part=1):
-    global num_rows, num_cols, board
+    global num_rows, num_cols
     with open(filename) as f:
         lines = f.read().splitlines()
         num_rows = len(lines)
@@ -67,15 +67,14 @@ def run(filename, part=1):
             if new_board == board:
                 print 'board is stable after {} rounds! {} seats occupied'.format(i, board.count('#'))
                 return board.count('#')
-                break
 
             i += 1
             board = list(new_board)
 
 
 if __name__ == '__main__':
-    assert run('testinput.txt') == 37
+    assert run('test-input.txt') == 37
     run('input.txt')
 
-    assert run('testinput.txt', 2) == 26
+    assert run('test-input.txt', 2) == 26
     run('input.txt', 2)
