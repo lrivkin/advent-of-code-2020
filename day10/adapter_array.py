@@ -1,6 +1,5 @@
 def process(adapters):
     difference = [adapters[i+1]-adapters[i] for i in range(len(adapters)-1)]
-    # print difference
     num_1s = difference.count(1)
     num_3s = difference.count(3)
     print '1: {} 3: {}'.format(num_1s, num_3s)
@@ -11,13 +10,10 @@ def count_arrangements(adapters):
     adapters.pop(0)
     num_arrangements = {0: 1}
     for d in adapters:
-        # print 'current adapter: {}'.format(d)
         n = 0
         options = [d-1, d-2, d-3]
-        # print 'options = {}'.format(options)
         for o in options:
             n += num_arrangements.get(o, 0)
-        # print 'sum of possible options = {}'.format(n)
         num_arrangements[d] = n
 
     print 'There are {} total arrangements'.format(num_arrangements[adapters[-1]])
