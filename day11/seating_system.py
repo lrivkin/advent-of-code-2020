@@ -36,8 +36,8 @@ def count_visible(board, position, max_depth=None):
 def pretty_print(board, cols):
     chunks = [board[i:i + cols] for i in range(0, len(board), cols)]
     for chunk in chunks:
-        print ''.join(chunk)
-    print ''
+        print(''.join(chunk))
+    print('')
 
 
 def run(filename, part=1):
@@ -46,8 +46,8 @@ def run(filename, part=1):
         lines = f.read().splitlines()
         num_rows = len(lines)
         num_cols = len(lines[0].strip())
-        # print 'rows: {} cols: {}'.format(num_rows, num_cols)
-        # print 'max_position = {}'.format((num_rows-1)*num_cols+num_cols-1)
+        # print('rows: {} cols: {}'.format(num_rows, num_cols)
+        # print('max_position = {}'.format((num_rows-1)*num_cols+num_cols-1)
         board = ''.join(lines)
 
         min_occupied = 4 if part == 1 else 5
@@ -65,7 +65,7 @@ def run(filename, part=1):
             # pretty_print(new_board, num_cols)
 
             if new_board == board:
-                print 'board is stable after {} rounds! {} seats occupied'.format(i, board.count('#'))
+                print('board is stable after {} rounds! {} seats occupied'.format(i, board.count('#')))
                 return board.count('#')
 
             i += 1

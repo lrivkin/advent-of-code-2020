@@ -20,18 +20,18 @@ def to_direction(n):
 def move(d):
     global ns, ew, facing
     action = d[0]
-    # print 'Action: {}'.format(d)
+    # print('Action: {}'.format(d)
     num = int(d[1:])
     if action in ['L', 'R']:
         if action == 'L':
             facing += num
         else:
             facing -= num
-        # print '\tTurned {}{} now facing {}'.format(action, num, to_direction(facing))
+        # print('\tTurned {}{} now facing {}'.format(action, num, to_direction(facing))
         return
     if action == 'F':
         action = '{}{}'.format(to_direction(facing), num)
-        # print '\tMoving forward {}'.format(num)
+        # print('\tMoving forward {}'.format(num)
         move(action)
         return
 
@@ -43,7 +43,7 @@ def move(d):
         ew += num
     elif action == 'W':
         ew -= num
-    # print '\tN: {} E: {} direction: {}'.format(ns, ew, to_direction(facing))
+    # print('\tN: {} E: {} direction: {}'.format(ns, ew, to_direction(facing))
 
 
 def run(file):
@@ -51,9 +51,9 @@ def run(file):
         directions = f.read().splitlines()
         for d in directions:
             move(d)
-        print 'Part 1, searching {}'.format(file)
-        print 'Final location: N {} E {}'.format(ns, ew)
-        print 'Cardinal direction: {}\n'.format(abs(ns) + abs(ew))
+        print('Part 1, searching {}'.format(file))
+        print('Final location: N {} E {}'.format(ns, ew))
+        print('Cardinal direction: {}\n'.format(abs(ns) + abs(ew)))
         return abs(ns) + abs(ew)
 
 
@@ -63,23 +63,22 @@ def process_instruction(d, w_ns, w_ew, b_ns, b_ew):
         b_ns, b_ew = move_boat(d, w_ns, w_ew, b_ns, b_ew)
     else:
         w_ns, w_ew = move_waypoint(d, w_ns, w_ew)
-    # print 'Boat position N: {} E: {}, waypoint N:{}, E:{}\n'.format(b_ns, b_ew, w_ns, w_ew)
+    # print('Boat position N: {} E: {}, waypoint N:{}, E:{}\n'.format(b_ns, b_ew, w_ns, w_ew)
     return b_ns, b_ew, w_ns, w_ew
 
 
 def move_boat(d, w_ns, w_ew, b_ns, b_ew):
-    # print 'Moving boat forward {}'.format(d)
-    action = d[0]
+    # print('Moving boat forward {}'.format(d)
     num = int(d[1:])
     b_ns += num * w_ns
     b_ew += num * w_ew
 
-    # print 'New boat position: N{} E{}'.format(b_ns, b_ew)
+    # print('New boat position: N{} E{}'.format(b_ns, b_ew)
     return b_ns, b_ew
 
 
 def move_waypoint(direction, w_ns, w_ew):
-    # print 'Moving waypoint {}'.format(direction)
+    # print('Moving waypoint {}'.format(direction)
     action = direction[0]
     num = int(direction[1:])
     if action in ['L', 'R']:
@@ -118,9 +117,9 @@ def part2(file):
         for a in actions:
             new_spots = process_instruction(a, way_n, way_e, boat_n, boat_e)
             boat_n, boat_e, way_n, way_e = new_spots
-    print 'Part 2, searching {}'.format(file)
-    print 'Final location: N {} E {}'.format(boat_n, boat_e)
-    print 'Cardinal direction: {}\n'.format(abs(boat_n) + abs(boat_e))
+    print('Part 2, searching {}'.format(file))
+    print('Final location: N {} E {}'.format(boat_n, boat_e))
+    print('Cardinal direction: {}\n'.format(abs(boat_n) + abs(boat_e)))
     return abs(boat_n) + abs(boat_e)
 
 
