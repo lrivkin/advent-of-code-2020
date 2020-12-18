@@ -51,7 +51,7 @@ def run(file, bag):
         [bag_dict.pop(b) for b in to_search_next]
         to_search = to_search_next.copy()
 
-    print 'This bag ({}) can be carried in {} other bags'.format(bag, len(can_carry_in))
+    print('This bag ({}) can be carried in {} other bags'.format(bag, len(can_carry_in)))
     return len(can_carry_in)
 
 
@@ -74,10 +74,10 @@ def count_num_bags_inside(bag_dict, bag):
 
 if __name__ == '__main__':
     # Part 1
-    assert run('testinput.txt', 'shiny gold') == 4
+    assert run('test-input.txt', 'shiny gold') == 4
     run('input.txt', 'shiny gold')
 
     # Part 2
     assert count_num_bags_inside(parse_input('part2test.txt'), 'shiny gold') == 126
-    assert count_num_bags_inside(parse_input('testinput.txt'), 'shiny gold') == 32
-    print count_num_bags_inside(parse_input('input.txt'), 'shiny gold')
+    assert count_num_bags_inside(parse_input('test-input.txt'), 'shiny gold') == 32
+    print(count_num_bags_inside(parse_input('input.txt'), 'shiny gold'))

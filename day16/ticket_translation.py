@@ -104,7 +104,6 @@ def discover_fields():
 def read_my_ticket():
     # rules_we_care_about = []
     rules_we_care_about = [i for i, r in enumerate(rule_positions) if r.startswith('departure')]
-    print('these rules matter {}'.format([rule_positions[r] for r in rules_we_care_about]))
     values_we_care_about = [my_ticket[i] for i in rules_we_care_about]
     print('these rules have values: {}'.format(values_we_care_about))
     answer = reduce(lambda x, y: x*y, values_we_care_about)
