@@ -5,16 +5,17 @@ def parse_expression(expression):
     # get rid of whitespace
     expression = ''.join(re.split('\s', expression))
     print(expression)
-    left_paren = [i for i in range(len(expression)) if expression[i] == '(']
-    print('( {}'.format(left_paren))
-    right_paren = [i for i in range(len(expression)) if expression[i] == ')']
-    print(') {}'.format(right_paren))
-    # parts = []
-    # for i, c in enumerate(expression):
-    #     if c == '(':
-    #         parts.append(expression[0:i])
-    #         print(i, c)
-    print(re.split('(\([^)]*\))', expression))
+
+    pairs = []
+    lefts = []
+    for i, c in enumerate(expression):
+        if c == '(':
+            lefts.append(i)
+        if c == ')':
+            pairs.append((lefts.pop(), i))
+            # evaluate between these 2 indices
+            # stick the result somewhere?
+    print(pairs)
 
 
 def evaluate(expression):
