@@ -29,10 +29,31 @@ def get_rule(rules, place):
     return ''.join(rule_0.split())
 
 
-def rule_zero_for_p2(rules, r42, r31, count8, count11):
-    rules['8'] = '({})'.format(r42) * count8
-    rules['11'] = '({})'.format(r42) * count11 + '({})'.format(r31) * count11
-    return get_rule(rules, '0')
+def find_max_repeats(messages, rule_42, rule_31):
+    # Max string in our set is length 96
+    longest_message = max(messages, key=len)
+    print('Longest message is length {}:  {}'.format(len(longest_message), longest_message))
+
+    # Pattern 42 + Pattern  31 both match strings of length 8 (real input)
+    for m in messages:
+        match_42 = re.match(rule_42, m)
+        match_31 = re.search(rule_31, m)
+        if match_42 and match_31:
+            match_42 = len(match_42.group())
+            match_31 = len(match_31.group())
+            break
+
+    # Worst-case: rule 8 is 1 repeat of 42 (len 8), and rule 11 is (96-8)/(8+8) repeats of rule 42/31
+    # Therefore - most times we need to repeat is (96-8)/16
+    worst_case = (len(longest_message)-match_42)/(match_42+match_31)
+    print('Worst case: rule 11 repeats {}'.format(worst_case))
+    return int(worst_case)
+
+
+def rule_zero_for_p2(r42, r31, count):
+    rule8 = '({})+'.format(r42)
+    rule11 = '({}){{{}}}({}){{{}}}'.format(r42, count, r31, count)
+    return '^{}{}$'.format(rule8, rule11)
 
 
 def count_new_matches(rules, messages):
@@ -42,18 +63,16 @@ def count_new_matches(rules, messages):
     rule_31 = get_rule(rules, '31')
     print('31 matches: {}'.format(rule_31))
 
-    # I know the current match using 42 42 31 -> yields a length of 24
-    # Max string in our set is length 48
-    # Some n number of iterations should work.......?
+    max_repeats = find_max_repeats(messages, rule_42, rule_31)
     matching_message_set = set()
-    for count8 in range(1, 6):
-        for count11 in range(1, 6):
-            rule_0 = rule_zero_for_p2(rules, rule_42, rule_31, count8, count11)
-            matching_messages = [m for m in messages if re.fullmatch(rule_0, m)]
-            matching_message_set.update(set(matching_messages))
-            # print('Finding matches against {}'.format(rule_0))
-            print('number matching: {}'.format(len(matching_messages)))
-    print('{} messages match'.format(len(matching_message_set)))
+
+    for i in range(max_repeats):
+        rule_0 = rule_zero_for_p2(rule_42, rule_31, i+1)
+        matching_messages = [m for m in messages if re.match(rule_0, m)]
+        matching_message_set.update(set(matching_messages))
+        print('Finding matches for rule 31 repeated {} times'.format(i+1))
+        print('\t{} messages match'.format(len(matching_messages)))
+    print('{} messages match in total'.format(len(matching_message_set)))
     return len(matching_message_set)
 
 
