@@ -3,7 +3,19 @@ import pprint
 from functools import reduce
 
 pp = pprint.PrettyPrinter()
-tile_store = {}     # Make printing/ visualizing easier
+tile_store = {}     # Stored tile_id: tile (as a string)
+all_matches = {}    # Stores a map of tile_id : { edge_id : (matching tile) }
+
+
+def pretty_print_tiles(tile_ids):
+    # assume tile_ids is a [[p1, p2, p3], [p4, p5, p6], ...]
+    for row in tile_ids:
+        if sum(row) > 0:
+            printable_grid = [tile_store[t].splitlines() for t in row if t]
+            print('  '.join(['Tile {}:'.format(t) for t in row]))
+            for i in range(10):
+                print('  '.join([t[i] for t in printable_grid]))
+        print('')
 
 
 def read_tiles(file):
@@ -18,7 +30,7 @@ def read_tiles(file):
             tile = tile_pieces[2]
             tiles[int(tile_id)] = get_edges(tile)
             tile_store[int(tile_id)] = tile
-    print(tiles)
+    # pp.pprint(tiles)
     return tiles
 
 
@@ -31,7 +43,13 @@ def get_edges(tile):
     return [top, right, bottom, left]
 
 
+def get_edge(tile_id, edge):
+    edges = get_edges(tile_store[tile_id])
+    return edges[edge]
+
+
 def parse_tiles(tiles):
+    global all_matches
     # 1 = original direction
     # -1 means this side was rotated somehow
     matches = {}
@@ -53,95 +71,84 @@ def parse_tiles(tiles):
         # Each edge pair will have a +-1 on it, so just look at the +1 orientation
         if a_orientation == 1:
             if len(match_list) > 1:
-                b_id, b_edge, b_orientation = match_list[1]
+                # If b_orientation also = +1, we'll have to flip it
+                # otherwise, these will match when we finally rotate it right
+                b_id, b_edge, _ = match_list[1]
                 all_matches[a_id][a_edge] = (b_id, b_edge)
                 all_matches[b_id][b_edge] = (a_id, a_edge)
 
-    pp.pprint(all_matches)
+    # pp.pprint(all_matches)
 
-    print('\nIgnoring reverse orientation, these are the tiles/edges that do not match')
     corners = [k for k, v in all_matches.items() if len(v) == 2]
     prod = reduce(lambda x, y: x*y, corners)
     print('Corners: {}'.format(corners))
     print('Product of corners: {}\n'.format(prod))
 
     solve_puzzle(all_matches, corners)
-    # edges = [k for k, v in all_matches.items() if len(v) == 3]
-    # centers = [k for k, v in all_matches.items() if len(v) == 4]
-    # print('Edges: {}'.format(edges))
-    # print('Center Pieces: {}'.format(centers))
 
 
-def flip_tile(tile_id, direction):
-    global tile_store
+def flip_tile(tile_id, edge):
+    global tile_store, all_matches
 
     tile = tile_store[tile_id].splitlines()
-    if direction == 1:
-        print('flipping {} vertically'.format(tile_id))
+    matches = all_matches[tile_id]
+    # print('starting: {}'.format(all_matches[tile_id]))
+    if edge % 2 != 0:
+        # print('flipping {} vertically'.format(tile_id))
         flipped = tile[::-1]
         x = '\n'.join(flipped)
+        # Change the even indices - leave the odd ones the same
+        all_matches[tile_id] = {k if (k % 2 != 0) else ((k + 2) % 4): v for k, v in matches.items()}
     else:
-        print('flipping {} horizontally'.format(tile_id))
+        # print('flipping {} horizontally'.format(tile_id))
         flipped = [t[::-1] for t in tile]
         x = '\n'.join(flipped)
+        # Change the odd indices - leave the even ones the same
+        all_matches[tile_id] = {k if (k % 2 == 0) else ((k + 2) % 4): v for k, v in matches.items()}
+    # print('ending: {}'.format(all_matches[tile_id]))
 
-    print('original    flipped')
-    for i in range(10):
-        print('  '.join([tile[i], x.splitlines()[i]]))
-    print('')
+    # print('original    flipped')
+    # for i in range(10):
+    #     print('  '.join([tile[i], x.splitlines()[i]]))
+    # print('')
     tile_store[tile_id] = x
 
 
 def rotate_tile(tile_id, factor):
-    global tile_store
+    global tile_store, all_matches
 
     factor = factor % 4
     if factor == 0:
         return
+
+    matches = all_matches[tile_id]
+    # print(matches)
     tile = tile_store[tile_id].splitlines()
     if factor == 1:
-        print('rotating {} to the right'.format(tile_id))
+        # print('rotating {} to the right'.format(tile_id))
         rotated = zip(*tile[::-1])
         x = '\n'.join([''.join(list(r)) for r in rotated])
     elif factor == 2:
-        print('rotating {} upside down'.format(tile_id))
-        rotated = list(zip(*tile[::-1]))[::-1]
+        # print('rotating {} upside down'.format(tile_id))
+        # Flip vertically and flip horizontally = a rotation by 2
+        rotated = [t[::-1] for t in tile[::-1]]
         x = '\n'.join([''.join(list(r)) for r in rotated])
     elif factor == 3:
-        print('rotating {} to the left'.format(tile_id))
+        # print('rotating {} to the left'.format(tile_id))
         rotated = list(zip(*tile))[::-1]
         x = '\n'.join([''.join(list(r)) for r in rotated])
 
-    print('original    rotated')
-    for i in range(10):
-        print('  '.join([tile[i], x.splitlines()[i]]))
-    print('')
+    # After we rotate - each edge needs to change in all_matches to make sure it still points the right way
+    all_matches[tile_id] = {((k + factor) % 4): v for k, v in matches.items()}
+    # print(all_matches[tile_id])
+    # print('')
+    # print('original    rotated')
+    # for i in range(10):
+    #     print('  '.join([tile[i], x.splitlines()[i]]))
+    # print('')
 
     tile_store[tile_id] = x
-
-
-def rotate_corner(corner_id, edge_matches, orientation):
-    if edge_matches.keys() == orientation:
-        return corner_id, edge_matches
-    # both of these could be {0,1}, {1,2}, {2,3}, {3,0}
-    edge1 = 3 if orientation == {3, 0} else min(orientation)
-    edge2 = (edge1 + 1) % 4
-
-    m1 = 3 if edge_matches.keys() == {3, 0} else min(edge_matches.keys())
-    m2 = (m1 + 1) % 4
-
-    # Build the new immediate tile
-    new_match = {
-        edge1: edge_matches[m1],
-        edge2: edge_matches[m2]
-    }
-    # TEST OUT ROTATION/ FLIPPING:
-    rotate_tile(corner_id, 1)
-    rotate_tile(corner_id, 2)
-    rotate_tile(corner_id, 3)
-    flip_tile(corner_id, 1)
-    flip_tile(corner_id, -1)
-    return corner_id, new_match
+    return tile_id, get_edges(x)
 
 
 def solve_puzzle(match_map, corners):
@@ -149,33 +156,42 @@ def solve_puzzle(match_map, corners):
     square_len = int(pow(num_tiles, 0.5))
     tile_grid = [[0 for _ in range(square_len)][:] for _ in range(square_len)]
 
-    match_map_corners = {c: match_map[c] for c in corners}
     # Set the first corner (doesn't matter what I pick)
-    top_left_id = corners[0]
-    top_left_edges = match_map_corners[top_left_id]
-    print(top_left_id, top_left_edges)
-    top_left_id, top_left_edges = rotate_corner(top_left_id, top_left_edges, {1, 2})
-    print(top_left_id, top_left_edges)
+    current_tile = corners[0]
+    current_target = 1
+    current_edges = all_matches[current_tile].keys()
+    current_edge = 3 if current_edges == {3, 0} else min(current_edges)
+    rotate_tile(current_tile, current_target-current_edge)
 
+    tile_grid[0][0] = current_tile
+    for j in range(square_len):
+        for i in range(square_len):
+            if i == 0 and j == 0:
+                # This is the first corner - we've already placed it
+                continue
 
-def pretty_print_tiles(tile_ids=[]):
-    tile_order = list(tile_store.keys())
-    row_len = int(pow(len(tile_order), 0.5))
-    tile_size = len(tile_store[tile_order[0]].splitlines())
+            # On the first tile of the row: current_target = 2 since we need to match the
+            #   bottom edge to the top edge of the next tile
+            # Otherwise, current_target = 1 since we match the right edge to the left
+            current_target = 1 if i > 0 else 2
+            next_tile, next_edge = all_matches[current_tile][current_target]
+            old_tile_edge = [k for k, v in all_matches[next_tile].items() if v[0] == current_tile][0]
 
-    tile_grid = [[[] for _ in range(row_len)][:] for _ in range(row_len)]
-    for r in range(row_len):
-        tile_grid[r] = tile_order[r*row_len:(r+1)*row_len]
+            # 1 = right: match with 3= left     2 = bottom: match with 0 = top
+            target_edge = 3 if current_target == 1 else 0
 
-    for i, r in enumerate(tile_grid):
-        for j, c in enumerate(r):
-            tile_grid[i][j] = tile_store[tile_grid[i][j]].splitlines()
-    print(tile_grid)
+            rotate_tile(next_tile, target_edge-old_tile_edge)
 
-    for r in tile_grid:
-        for i in range(tile_size):
-            print('  '.join([r[j][i] for j in range(row_len)]))
-        print('')
+            # Do we need to flip? they're good if the edges are opposite (we record top -> down or down -> top)
+            # There's probably a better way to do this (before I recorded direction of the edge) but ?
+            if get_edge(current_tile, current_target) == get_edge(next_tile, target_edge):
+                flip_tile(next_tile, target_edge)
+
+            tile_grid[j][i] = next_tile
+            current_tile = next_tile if i+1 < square_len else tile_grid[j][0]
+
+    print('SOLVED THE PUZZLE!!!!')
+    pretty_print_tiles(tile_grid)
 
 
 if __name__ == '__main__':
@@ -185,6 +201,5 @@ if __name__ == '__main__':
     parse_tiles(tiles)
 
     # Real input is a 12 x 12
-    # tiles = read_tiles('input.txt')
-    # parse_tiles(tiles)
-
+    tiles = read_tiles('input.txt')
+    parse_tiles(tiles)
