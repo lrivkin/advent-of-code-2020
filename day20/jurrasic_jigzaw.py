@@ -84,7 +84,7 @@ def parse_tiles(tiles):
     print('Corners: {}'.format(corners))
     print('Product of corners: {}\n'.format(prod))
 
-    solve_puzzle(all_matches, corners)
+    solve_puzzle(corners)
 
 
 def flip_tile(tile_id, edge):
@@ -151,9 +151,8 @@ def rotate_tile(tile_id, factor):
     return tile_id, get_edges(x)
 
 
-def solve_puzzle(match_map, corners):
-    num_tiles = len(match_map)
-    square_len = int(pow(num_tiles, 0.5))
+def solve_puzzle(corners):
+    square_len = int(pow(len(all_matches), 0.5))
     tile_grid = [[0 for _ in range(square_len)][:] for _ in range(square_len)]
 
     # Set the first corner (doesn't matter what I pick)
@@ -195,46 +194,41 @@ def solve_puzzle(match_map, corners):
     check_for_sea_monsters(tile_grid)
 
 
-def get_sea_monsters(image):
-    """
-    Sea monsters look like this:
+monsters = '''
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+'''
+monster_regex = monsters.replace(' ', '.').splitlines()
+monster_top_regex = re.compile(monster_regex[1])
+monster_mid_regex = re.compile(f'(?=({monster_regex[2]}))')
+monster_bottom_regex = re.compile(monster_regex[3])
+monster_len = len(monster_regex[1])
 
-                      #
-    #    ##    ##    ###
-     #  #  #  #  #  #
-    """
-    t_monster = re.compile('..................#.')
-    m_monster = re.compile('#....##....##....###')
-    b_monster = re.compile('.#..#..#..#..#..#...')
+
+def get_sea_monsters(image):
     image_grid = image.splitlines()
-    # num_monsters = 0
-    # for i in range(1, len(image_grid) - 1):
-    #     row = image_grid[i]
-    #     if m_monster.search(row):
-    #         # Check above/below to make sure it's actually a real monster
-    #         # Return only the real monsters
-    #         maybe_monsters = [m.span() for m in m_monster.finditer(row)]
-    #         for start, end in maybe_monsters:
-    #             if t_monster.fullmatch(image_grid[i - 1][start:end]) and b_monster.fullmatch(
-    #                     image_grid[i + 1][start:end]):
-    #                 num_monsters += 1
-    #                 print('MONSTER')
-    #                 print('\n'.join([image_grid[i + x][start:end] for x in range(-1, 2)]))
     num_monsters = 0
-    for i in range(2, len(image_grid)):
+    old_way_matches = set()
+    for i in range(1, len(image_grid) - 1):
         row = image_grid[i]
-        if b_monster.search(row):
+        if monster_mid_regex.search(row):
             # Check above/below to make sure it's actually a real monster
             # Return only the real monsters
-            maybe_monsters = [m.span() for m in b_monster.finditer(row)]
-            for start, end in maybe_monsters:
-                if t_monster.fullmatch(image_grid[i-2][start:end]) and m_monster.fullmatch(
-                        image_grid[i-1][start:end]):
+            # For finding the middle (the start of the monster), allow for overlaps
+            maybe_monsters = [m.span() for m in monster_mid_regex.finditer(row)]
+            for start, _ in maybe_monsters:
+                if monster_top_regex.match(image_grid[i - 1][start:start+monster_len]) and monster_bottom_regex.match(
+                        image_grid[i + 1][start:start+monster_len]):
                     num_monsters += 1
-                    print('MONSTER')
-                    print('\n'.join([image_grid[i + x][start:end] for x in range(-1, 2)]))
-    if num_monsters > 0:
-        print('')
+                    old_way_matches.add((i-1, start))
+                    # print('MONSTER')
+                    # print('\n'.join([image_grid[i + x][start:start+monster_len] for x in range(-1, 2)]))
+                    # print('')
+
+    # if num_monsters > 0:
+    #     print('')
+
     return num_monsters
 
 
@@ -259,13 +253,9 @@ def check_for_sea_monsters(tile_grid):
         rotated = zip(*image.splitlines()[::-1])
         image = '\n'.join([''.join(list(r)) for r in rotated])
 
-    # AT THIS POINT: The image should be oriented correctly and we have the monsters!
+    # The image should be oriented correctly and we have the monsters!
     print("There's {} sea monsters!".format(num_sea_monsters))
-    monsters = '''
-                      # 
-    #    ##    ##    ###
-     #  #  #  #  #  #
-    '''
+
     print('There are {} # in the water'.format(image.count('#')))
     print('Each monster has {} #'.format(monsters.count('#')))
 
