@@ -34,21 +34,7 @@ def read_tiles(file):
     return tiles
 
 
-def get_edges(tile):
-    tile_rows = tile.splitlines()
-    top = tile_rows[0]
-    right = ''.join([r[-1] for r in tile_rows])
-    bottom = tile_rows[-1][::-1]
-    left = ''.join([x[0] for x in reversed(tile_rows)])
-    return [top, right, bottom, left]
-
-
-def get_edge(tile_id, edge):
-    edges = get_edges(tile_store[tile_id])
-    return edges[edge]
-
-
-def parse_tiles(tiles):
+def generate_matches(tiles):
     global all_matches
     # 1 = original direction
     # -1 means this side was rotated somehow
@@ -77,17 +63,28 @@ def parse_tiles(tiles):
                 all_matches[a_id][a_edge] = (b_id, b_edge)
                 all_matches[b_id][b_edge] = (a_id, a_edge)
 
-    # pp.pprint(all_matches)
 
-    corners = [k for k, v in all_matches.items() if len(v) == 2]
-    prod = reduce(lambda x, y: x * y, corners)
-    print('Corners: {}'.format(corners))
-    print('Product of corners: {}\n'.format(prod))
+def get_edges(tile):
+    tile_rows = tile.splitlines()
+    top = tile_rows[0]
+    right = ''.join([r[-1] for r in tile_rows])
+    bottom = tile_rows[-1][::-1]
+    left = ''.join([x[0] for x in reversed(tile_rows)])
+    return [top, right, bottom, left]
 
-    solve_puzzle(corners)
+
+def get_edge(tile_id, edge):
+    edges = get_edges(tile_store[tile_id])
+    return edges[edge]
 
 
 def flip_tile(tile_id, edge):
+    """
+    Flip the tile vertically or horizontally
+
+    :param tile_id:
+    :param edge - we'll flip around this edge:
+    """
     global tile_store, all_matches
 
     tile = tile_store[tile_id].splitlines()
@@ -115,6 +112,15 @@ def flip_tile(tile_id, edge):
 
 
 def rotate_tile(tile_id, factor):
+    """
+    Rotate the tile by the given factor.
+    Update the tile store so the tiles there have the right orientation.
+    Update the edge matches map too.
+
+    :param tile_id:
+    :param factor:
+    :return:
+    """
     global tile_store, all_matches
 
     factor = factor % 4
@@ -122,7 +128,6 @@ def rotate_tile(tile_id, factor):
         return
 
     matches = all_matches[tile_id]
-    # print(matches)
     tile = tile_store[tile_id].splitlines()
     if factor == 1:
         # print('rotating {} to the right'.format(tile_id))
@@ -130,7 +135,6 @@ def rotate_tile(tile_id, factor):
         x = '\n'.join([''.join(list(r)) for r in rotated])
     elif factor == 2:
         # print('rotating {} upside down'.format(tile_id))
-        # Flip vertically and flip horizontally = a rotation by 2
         rotated = [t[::-1] for t in tile[::-1]]
         x = '\n'.join([''.join(list(r)) for r in rotated])
     elif factor == 3:
@@ -139,6 +143,7 @@ def rotate_tile(tile_id, factor):
         x = '\n'.join([''.join(list(r)) for r in rotated])
 
     # After we rotate - each edge needs to change in all_matches to make sure it still points the right way
+    # print(matches)
     all_matches[tile_id] = {((k + factor) % 4): v for k, v in matches.items()}
     # print(all_matches[tile_id])
     # print('')
@@ -148,15 +153,14 @@ def rotate_tile(tile_id, factor):
     # print('')
 
     tile_store[tile_id] = x
-    return tile_id, get_edges(x)
 
 
-def solve_puzzle(corners):
+def solve_puzzle():
     square_len = int(pow(len(all_matches), 0.5))
     tile_grid = [[0 for _ in range(square_len)][:] for _ in range(square_len)]
 
     # Set the first corner (doesn't matter what I pick)
-    current_tile = corners[0]
+    current_tile = [k for k, v in all_matches.items() if len(v) == 2][0]
     current_target = 1
     current_edges = all_matches[current_tile].keys()
     current_edge = 3 if current_edges == {3, 0} else min(current_edges)
@@ -174,15 +178,18 @@ def solve_puzzle(corners):
             # Otherwise, current_target = 1 since we match the right edge to the left
             current_target = 1 if i > 0 else 2
             next_tile, next_edge = all_matches[current_tile][current_target]
+
+            # The way the next tile is oriented now, the edge that WILL match is this one
             old_tile_edge = [k for k, v in all_matches[next_tile].items() if v[0] == current_tile][0]
 
             # 1 = right: match with 3= left     2 = bottom: match with 0 = top
+            # This is the way we want that edge of the new tile to be
             target_edge = 3 if current_target == 1 else 0
 
             rotate_tile(next_tile, target_edge - old_tile_edge)
 
             # Do we need to flip? they're good if the edges are opposite (we record top -> down or down -> top)
-            # There's probably a better way to do this (before I recorded direction of the edge) but ?
+            # There's probably a better way to do this?
             if get_edge(current_tile, current_target) == get_edge(next_tile, target_edge):
                 flip_tile(next_tile, target_edge)
 
@@ -207,25 +214,28 @@ monster_len = len(monster_regex[1])
 
 
 def get_sea_monsters(image):
+    """
+    Strategy: Row by row, look for the string that represents
+        the middle portion of the monster.
+        If it matches, check that the portion above/below also match.
+        Monsters CAN overlap.
+
+    :param image - a string representing the image:
+    :return num_monsters:
+    """
     image_grid = image.splitlines()
     num_monsters = 0
-    old_way_matches = set()
     for i in range(1, len(image_grid) - 1):
         row = image_grid[i]
         if monster_mid_regex.search(row):
-            # Check above/below to make sure it's actually a real monster
-            # Return only the real monsters
-            # For finding the middle (the start of the monster), allow for overlaps
             maybe_monsters = [m.span() for m in monster_mid_regex.finditer(row)]
             for start, _ in maybe_monsters:
                 if monster_top_regex.match(image_grid[i - 1][start:start+monster_len]) and monster_bottom_regex.match(
                         image_grid[i + 1][start:start+monster_len]):
                     num_monsters += 1
-                    old_way_matches.add((i-1, start))
                     # print('MONSTER')
                     # print('\n'.join([image_grid[i + x][start:start+monster_len] for x in range(-1, 2)]))
                     # print('')
-
     # if num_monsters > 0:
     #     print('')
 
@@ -233,6 +243,14 @@ def get_sea_monsters(image):
 
 
 def check_for_sea_monsters(tile_grid):
+    """
+    Remove the edges from each tile and put them together.
+    Flip and rotate the tile until the monsters show up.
+    Count the monsters and calculate the answer.
+
+    :param tile_grid:
+    :return water roughness:
+    """
     image = ''
     for row in tile_grid:
         image_part = [tile_store[t].splitlines() for t in row]
@@ -253,23 +271,32 @@ def check_for_sea_monsters(tile_grid):
         rotated = zip(*image.splitlines()[::-1])
         image = '\n'.join([''.join(list(r)) for r in rotated])
 
-    # The image should be oriented correctly and we have the monsters!
     print("There's {} sea monsters!".format(num_sea_monsters))
-
+    print('Each monster counts for {} #'.format(monsters.count('#')))
     print('There are {} # in the water'.format(image.count('#')))
-    print('Each monster has {} #'.format(monsters.count('#')))
 
-    choppiness = image.count("#") - num_sea_monsters * monsters.count('#')
-    print('The water has a roughness of {}\n\n'.format(choppiness))
-    return choppiness
+    roughness = image.count("#") - num_sea_monsters * monsters.count('#')
+    print('PART 2: The water has a roughness of {}\n\n'.format(roughness))
+    return roughness
+
+
+def run(file):
+    print('RUNNING PROGRAM: ', file)
+    tiles = read_tiles(file)
+    generate_matches(tiles)
+
+    corners = [k for k, v in all_matches.items() if len(v) == 2]
+    prod = reduce(lambda x, y: x * y, corners)
+    print('Corners: {}'.format(corners))
+    print('PART 1: Product of corners = {}\n'.format(prod))
+
+    solve_puzzle()
 
 
 if __name__ == '__main__':
     print('--- Day 20: Jurassic Jigsaw ---')
     # Test is only 3 x 3
-    tiles = read_tiles('test-input.txt')
-    parse_tiles(tiles)
+    run('test-input.txt')
 
     # Real input is a 12 x 12
-    tiles = read_tiles('input.txt')
-    parse_tiles(tiles)
+    run('input.txt')
