@@ -3,8 +3,8 @@ import pprint
 from functools import reduce
 
 pp = pprint.PrettyPrinter()
-tile_store = {}     # Stored tile_id: tile (as a string)
-all_matches = {}    # Stores a map of tile_id : { edge_id : (matching tile) }
+tile_store = {}  # Stored tile_id: tile (as a string)
+all_matches = {}  # Stores a map of tile_id : { edge_id : (matching tile) }
 
 
 def pretty_print_tiles(tile_ids):
@@ -80,7 +80,7 @@ def parse_tiles(tiles):
     # pp.pprint(all_matches)
 
     corners = [k for k, v in all_matches.items() if len(v) == 2]
-    prod = reduce(lambda x, y: x*y, corners)
+    prod = reduce(lambda x, y: x * y, corners)
     print('Corners: {}'.format(corners))
     print('Product of corners: {}\n'.format(prod))
 
@@ -161,7 +161,7 @@ def solve_puzzle(match_map, corners):
     current_target = 1
     current_edges = all_matches[current_tile].keys()
     current_edge = 3 if current_edges == {3, 0} else min(current_edges)
-    rotate_tile(current_tile, current_target-current_edge)
+    rotate_tile(current_tile, current_target - current_edge)
 
     tile_grid[0][0] = current_tile
     for j in range(square_len):
@@ -180,7 +180,7 @@ def solve_puzzle(match_map, corners):
             # 1 = right: match with 3= left     2 = bottom: match with 0 = top
             target_edge = 3 if current_target == 1 else 0
 
-            rotate_tile(next_tile, target_edge-old_tile_edge)
+            rotate_tile(next_tile, target_edge - old_tile_edge)
 
             # Do we need to flip? they're good if the edges are opposite (we record top -> down or down -> top)
             # There's probably a better way to do this (before I recorded direction of the edge) but ?
@@ -188,10 +188,90 @@ def solve_puzzle(match_map, corners):
                 flip_tile(next_tile, target_edge)
 
             tile_grid[j][i] = next_tile
-            current_tile = next_tile if i+1 < square_len else tile_grid[j][0]
+            current_tile = next_tile if i + 1 < square_len else tile_grid[j][0]
 
     print('SOLVED THE PUZZLE!!!!')
     pretty_print_tiles(tile_grid)
+    check_for_sea_monsters(tile_grid)
+
+
+def get_sea_monsters(image):
+    """
+    Sea monsters look like this:
+
+                      #
+    #    ##    ##    ###
+     #  #  #  #  #  #
+    """
+    t_monster = re.compile('..................#.')
+    m_monster = re.compile('#....##....##....###')
+    b_monster = re.compile('.#..#..#..#..#..#...')
+    image_grid = image.splitlines()
+    # num_monsters = 0
+    # for i in range(1, len(image_grid) - 1):
+    #     row = image_grid[i]
+    #     if m_monster.search(row):
+    #         # Check above/below to make sure it's actually a real monster
+    #         # Return only the real monsters
+    #         maybe_monsters = [m.span() for m in m_monster.finditer(row)]
+    #         for start, end in maybe_monsters:
+    #             if t_monster.fullmatch(image_grid[i - 1][start:end]) and b_monster.fullmatch(
+    #                     image_grid[i + 1][start:end]):
+    #                 num_monsters += 1
+    #                 print('MONSTER')
+    #                 print('\n'.join([image_grid[i + x][start:end] for x in range(-1, 2)]))
+    num_monsters = 0
+    for i in range(2, len(image_grid)):
+        row = image_grid[i]
+        if b_monster.search(row):
+            # Check above/below to make sure it's actually a real monster
+            # Return only the real monsters
+            maybe_monsters = [m.span() for m in b_monster.finditer(row)]
+            for start, end in maybe_monsters:
+                if t_monster.fullmatch(image_grid[i-2][start:end]) and m_monster.fullmatch(
+                        image_grid[i-1][start:end]):
+                    num_monsters += 1
+                    print('MONSTER')
+                    print('\n'.join([image_grid[i + x][start:end] for x in range(-1, 2)]))
+    if num_monsters > 0:
+        print('')
+    return num_monsters
+
+
+def check_for_sea_monsters(tile_grid):
+    image = ''
+    for row in tile_grid:
+        image_part = [tile_store[t].splitlines() for t in row]
+        image = image + '\n'.join([''.join([t[i][1:-1] for t in image_part]) for i in range(1, 9)]) + '\n'
+
+    num_sea_monsters = 0
+    for _ in range(4):
+        num_sea_monsters = max(num_sea_monsters, get_sea_monsters(image))
+
+        # Check the image flipped vertically + horizontally
+        vertical_image = '\n'.join([t[::-1] for t in image.splitlines()])
+        num_sea_monsters = max(num_sea_monsters, get_sea_monsters(vertical_image))
+
+        horizontal_image = '\n'.join(image.splitlines()[::-1])
+        num_sea_monsters = max(num_sea_monsters, get_sea_monsters(horizontal_image))
+
+        # Rotate the image 1 to the right + check again
+        rotated = zip(*image.splitlines()[::-1])
+        image = '\n'.join([''.join(list(r)) for r in rotated])
+
+    # AT THIS POINT: The image should be oriented correctly and we have the monsters!
+    print("There's {} sea monsters!".format(num_sea_monsters))
+    monsters = '''
+                      # 
+    #    ##    ##    ###
+     #  #  #  #  #  #
+    '''
+    print('There are {} # in the water'.format(image.count('#')))
+    print('Each monster has {} #'.format(monsters.count('#')))
+
+    choppiness = image.count("#") - num_sea_monsters * monsters.count('#')
+    print('The water has a roughness of {}\n\n'.format(choppiness))
+    return choppiness
 
 
 if __name__ == '__main__':
